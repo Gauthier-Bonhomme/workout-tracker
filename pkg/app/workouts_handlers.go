@@ -20,6 +20,7 @@ func (a *App) addRoutesWorkouts(g *echo.Group) {
 	a.POST(workoutsGroup, "", a.addWorkout, "workouts-create")
 	a.GET(workoutsGroup, "/:id", a.workoutsShowHandler, "workout-show")
 	a.POST(workoutsGroup, "/:id", a.workoutsUpdateHandler, "workout-update")
+	a.GET(workoutsGroup, "/:id/trace.svg", a.workoutsTraceHandler, "workout-trace")
 	a.GET(workoutsGroup, "/:id/download", a.workoutsDownloadHandler, "workout-download")
 	a.GET(workoutsGroup, "/:id/edit", a.workoutsEditHandler, "workout-edit")
 	a.GET(workoutsGroup, "/:id/delete", a.workoutsDeleteConfirmHandler, "workout-delete-confirm")

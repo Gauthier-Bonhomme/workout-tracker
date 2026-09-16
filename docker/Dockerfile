@@ -35,6 +35,9 @@ COPY translations ./translations
 COPY --from=frontend /app/assets ./assets
 
 ENV CGO_ENABLED=0
+# Les .templ modifies doivent etre recompiles en _templ.go : sans cette etape,
+# la build reutilise les fichiers generes commites et ignore les changements.
+RUN go tool templ generate --include-version=false
 RUN go mod vendor && go build \
     -ldflags "-X 'main.buildTime=${BUILD_TIME}' -X 'main.gitCommit=${GIT_COMMIT}' -X 'main.gitRef=${GIT_REF}' -X 'main.gitRefName=${GIT_REF_NAME}' -X 'main.gitRefType=${GIT_REF_TYPE}'" \
     -o /commands/ ./cmd/...

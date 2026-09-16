@@ -63,53 +63,137 @@ templ List(workouts []*database.Workout, filters *database.WorkoutFilters) {
 				<button type="submit">{ i18n.T(ctx, "translation.Filter") }</button>
 			</form>
 		</details>
-		<table class="workout-info">
-			<thead>
-				<tr>
-					<th></th>
-					<th>{ i18n.T(ctx, "translation.Name") }</th>
-					<th>{ i18n.T(ctx, "translation.Date") }</th>
-					<th class="hidden lg:table-cell">{ i18n.T(ctx, "translation.Details") }</th>
-					<th class="hidden sm:table-cell"></th>
-				</tr>
-			</thead>
-			<tbody>
-				for _, w := range workouts {
-					<tr>
-						<td class="text-center">
-							<div title={ i18n.T(ctx, w.Type.StringT()) }>
-								@helpers.IconFor(w.Type.String())
-								if w.HasCustomType() {
-									<i>{ w.CustomType }</i>
-								} else {
-									{ i18n.T(ctx, w.Type.StringT()) }
-								}
-							</div>
-						</td>
-						<td>
-							<a href={ templ.SafeURL(helpers.RouteFor(ctx, "workout-show", w.ID)) }>
-								@Name(w, 20)
-							</a>
-						</td>
-						<td>
-							@partials.SnippetDate(w.Date)
-						</td>
-						<th class="hidden lg:table-cell">
-							@ListDetails(w)
-						</th>
-						<td class="hidden sm:table-cell">
-							if w.Dirty {
-								<span title={ i18n.T(ctx, "translation.refresh_in_progress") }>
-									@helpers.IconFor("refresh")
-								</span>
-							}
-							<span class="actions">
-								@Actions(w)
-							</span>
-						</td>
-					</tr>
-				}
-			</tbody>
-		</table>
+		<div class="workout-feed">
+			for _, w := range workouts {
+				@Card(w)
+			}
+		</div>
 	}
+}
+
+// Card presente une seance dans la liste : le trace sert de signature visuelle,
+// on reconnait une sortie a sa forme avant meme de lire son titre.
+templ Card(w *database.Workout) {
+	{{ photos := helpers.ImagesInNotes(w.Notes, 5) }}
+	{{ totalPhotos := helpers.CountImagesInNotes(w.Notes) }}
+	<article class="workout-card">
+		<a
+			class="carte-trace"
+			href={ templ.SafeURL(helpers.RouteFor(ctx, "workout-show", w.ID)) }
+			aria-hidden="true"
+			tabindex="-1"
+		>
+			if w.Type.IsLocation() {
+				<img
+					src={ helpers.RouteFor(ctx, "workout-trace", w.ID) }
+					loading="lazy"
+					decoding="async"
+					width="232"
+					height="152"
+					alt=""
+				/>
+			} else {
+				<span class="sans-trace">
+					@helpers.IconFor(w.Type.String())
+				</span>
+			}
+		</a>
+		<div class="corps">
+			<p class="ligne-type">
+				<span class="type">
+					if w.HasCustomType() {
+						{ w.CustomType }
+					} else {
+						{ i18n.T(ctx, w.Type.StringT()) }
+					}
+				</span>
+				<span class="pastille"></span>
+				@partials.SnippetDate(w.Date)
+				if w.Type.IsLocation() && w.Address() != "" {
+					<span class="pastille"></span>
+					<span class="lieu">{ w.Address() }</span>
+				}
+				if w.Dirty {
+					<span class="dirty" title={ i18n.T(ctx, "translation.refresh_in_progress") }>
+						@helpers.IconFor("refresh")
+					</span>
+				}
+			</p>
+			<h3 class="titre">
+				<a href={ templ.SafeURL(helpers.RouteFor(ctx, "workout-show", w.ID)) }>
+					@Name(w, 0)
+				</a>
+			</h3>
+			@CardFigures(w)
+			if len(photos) > 0 {
+				<div class="bande-photos">
+					for _, url := range photos {
+						<img src={ url } loading="lazy" decoding="async" alt=""/>
+					}
+					if totalPhotos > len(photos) {
+						<span class="reste">+{ helpers.A2S(totalPhotos - len(photos)) }</span>
+					}
+				</div>
+			}
+			<span class="actions">
+				@Actions(w)
+			</span>
+		</div>
+	</article>
+}
+
+// CardFigures aligne les chiffres d'une seance : valeur en gros, unite en petit,
+// libelle dessous. Remplace la rangee d'icones difficile a comparer d'une carte
+// a l'autre.
+templ CardFigures(w *database.Workout) {
+	{{ preferredUnits := helpers.CurrentUser(ctx).PreferredUnits() }}
+	<div class="chiffres">
+		if w.Type.IsDistance() {
+			<div class="chiffre majeur">
+				<span class="valeur">
+					{ helpers.HumanDistanceForWorkout(ctx, w, w.TotalDistance()) }
+					<span class="unite">{ helpers.DistanceUnitForWorkout(ctx, w) }</span>
+				</span>
+				<span class="libelle">{ i18n.T(ctx, "translation.Distance") }</span>
+			</div>
+		}
+		if w.Type.IsLocation() && w.TotalUp() != 0 {
+			<div class="chiffre">
+				<span class="valeur">
+					{ helpers.HumanElevation(ctx, w.TotalUp()) }
+					<span class="unite">{ preferredUnits.Elevation() }</span>
+				</span>
+				<span class="libelle">{ i18n.T(ctx, "translation.Total_up") }</span>
+			</div>
+		}
+		if w.Type.IsDuration() {
+			<div class="chiffre">
+				<span class="valeur">{ helpers.HumanDuration(w.TotalDuration()) }</span>
+				<span class="libelle">{ i18n.T(ctx, "translation.Duration") }</span>
+			</div>
+		}
+		if w.Type.IsDistance() && w.Type.IsDuration() {
+			<div class="chiffre">
+				<span class="valeur">
+					@partials.PreferredAverageSpeedMetric(w, preferredUnits)
+				</span>
+				<span class="libelle">{ i18n.T(ctx, "translation.Average_speed") }</span>
+			</div>
+		}
+		if w.Type.IsWeight() {
+			<div class="chiffre majeur">
+				<span class="valeur">
+					{ helpers.HumanWeight(ctx, w.Weight()) }
+					<span class="unite">{ preferredUnits.Weight() }</span>
+				</span>
+				<span class="libelle">{ i18n.T(ctx, "translation.Weight") }</span>
+			</div>
+		}
+		if w.Type.IsRepetition() {
+			<div class="chiffre majeur">
+				<span class="valeur">{ helpers.A2S(w.Repetitions()) }</span>
+				<span class="libelle">{ i18n.T(ctx, "translation.Repetitions") }</span>
+			</div>
+		}
+	</div>
 }
