@@ -127,12 +127,25 @@ func preMigrationActions(db *gorm.DB) error {
 }
 
 func postMigrationActions(db *gorm.DB) error {
-	workouts, err := GetWorkouts(db)
-	if err != nil {
+	// Only workouts whose map data has no extra metrics yet need this migration.
+	// Fetching every workout up front (GetWorkouts preloads Data.Details) pulls
+	// the GPS points of the whole database into memory on every startup, which
+	// costs several gigabytes once a few hundred workouts are stored.
+	var workoutIDs []uint64
+
+	if err := db.Model(&MapData{}).
+		Where("extra_metrics IS NULL").
+		Pluck("workout_id", &workoutIDs).Error; err != nil {
 		return err
 	}
 
-	for _, w := range workouts {
+	for _, id := range workoutIDs {
+		var w Workout
+
+		if err := db.Preload("Data").Preload("Data.Details").First(&w, id).Error; err != nil {
+			return err
+		}
+
 		if !w.HasTracks() || w.Data.ExtraMetrics != nil {
 			continue
 		}
