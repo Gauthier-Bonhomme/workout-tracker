@@ -89,7 +89,7 @@ func Map(w *database.Workout) templ.Component {
 			AerialName:    i18n.T(ctx, "translation.Aerial"),
 			ShowElevation: true,
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<wt-map id=\"workout-map\" class=\"border-2 border-black rounded-xl h-[300px] sm:h-[400px] md:h-[600px] print:w-full print:h-[600px]\" map-config=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<wt-map id=\"workout-map\" class=\"border border-line rounded h-[300px] sm:h-[400px] md:h-[600px] print:w-full print:h-[600px]\" map-config=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

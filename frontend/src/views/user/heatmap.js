@@ -105,14 +105,18 @@ class WtHeatmap extends HTMLElement {
       options: { position: "topright" },
 
       onAdd: function () {
-        const container = L.DomUtil.create("div", "flex flex-col p-2");
+        // Le fond et les filets viennent de .reglages-heatmap (main.css) plutot
+        // que d'un blanc fixe, pour que le panneau suive le theme du site.
+        const container = L.DomUtil.create(
+          "div",
+          "flex flex-col gap-1 p-3 reglages-heatmap",
+        );
 
-        container.style.backgroundColor = "white";
         container.innerHTML = `
-        <div class="flex items-center"><label for="radius" class="w-12 text-zinc-800">Radius</label><input class="p-0" type="range" id="radius" value="10" min="1" max="30"/></div>
-        <div class="flex items-center"><label for="blur" class="w-12 text-zinc-800">Blur</label><input class="p-0" type="range" id="blur" value="15" min="1" max="30"/></div>
-        <div class="flex items-center"><input type="checkbox" id="showMarkers" name="showMarkers" class="mr-1" checked /><label for="showMarkers" class="text-zinc-800">Show Markers</label></div>
-        <div class="flex items-center"><input type="checkbox" id="onlyTrace" name="onlyTrace" class="mr-1" /><label for="onlyTrace" class="text-zinc-800">Only show where you've been</label></div>
+        <div class="flex items-center gap-2"><label for="radius" class="w-14">Rayon</label><input type="range" id="radius" value="10" min="1" max="30"/></div>
+        <div class="flex items-center gap-2"><label for="blur" class="w-14">Flou</label><input type="range" id="blur" value="15" min="1" max="30"/></div>
+        <div class="flex items-center gap-2"><input type="checkbox" id="showMarkers" name="showMarkers" checked /><label for="showMarkers">Afficher les repères</label></div>
+        <div class="flex items-center gap-2"><input type="checkbox" id="onlyTrace" name="onlyTrace" /><label for="onlyTrace">Montrer seulement où je suis passé</label></div>
         `;
 
         // Prevent map drag when clicking control

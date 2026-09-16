@@ -59,12 +59,8 @@ templ Show(w *database.Workout) {
 				NoPrint:     true,
 				ContentFunc: func() templ.Component { return renderDetails(w) },
 			},
-			partials.Tab{
-				Icon:        "route-segment",
-				Name:        i18n.T(ctx, "translation.Matching_route_segments"),
-				Show:        len(w.RouteSegmentMatches) > 0,
-				ContentFunc: func() templ.Component { return renderRouteSegments(w) },
-			},
+			// Onglet « segments d'itineraire » retire : la fonctionnalite n'est
+			// pas utilisee ici, et son entree de menu a disparu avec.
 			partials.Tab{
 				Icon:        "note",
 				Name:        i18n.T(ctx, "translation.Notes"),

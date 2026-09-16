@@ -90,7 +90,7 @@ func Heatmap(workouts []*database.Workout) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</h2><div id=\"map-container\" class=\"small-size pagebreak\"><wt-heatmap id=\"map\" class=\"border-2 border-black rounded-xl h-[600px] md:h-[800px] print:w-full print:h-[800px]\" api-workouts-coordinates-route=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</h2><div id=\"map-container\" class=\"basis-full pagebreak\"><wt-heatmap id=\"map\" class=\"border border-line rounded h-[600px] md:h-[800px] print:w-full print:h-[800px]\" api-workouts-coordinates-route=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -15,7 +15,7 @@ templ StatsRecordsTotal(user *database.User) {
 		<pre>{ err.Error() }</pre>
 	} else {
 		{{ preferredUnits := helpers.CurrentUser(ctx).PreferredUnits() }}
-		<div class="md:flex md:flex-wrap">
+		<div class="socle-totaux">
 			@StatisticTile(user.Profile.TotalsShow.String(), i18n.T(ctx, user.Profile.TotalsShow.StringT()), helpers.A2S(totals.Workouts), "")
 			@StatisticTile("distance", i18n.T(ctx, "translation.distance"), templatehelpers.HumanDistanceFor(preferredUnits.Distance(&user.Profile.TotalsShow))(totals.Distance), preferredUnits.Distance(&user.Profile.TotalsShow))
 			@StatisticTile("up", i18n.T(ctx, "translation.up"), helpers.HumanElevation(ctx, totals.Up), preferredUnits.Elevation())
@@ -24,25 +24,21 @@ templ StatsRecordsTotal(user *database.User) {
 	}
 }
 
+// StatisticTile : libelle en petites capitales au-dessus, chiffre en grand
+// dessous. L'icone geante de la version d'origine occupait un tiers de la tuile
+// sans rien apprendre de plus que le libelle.
 templ StatisticTile(icon string, name string, value string, unit string) {
-	<div class="md:basis-1/2 lg:basis-1/4">
-		<div class="inner-form">
-			<div class="grid grid-cols-3">
-				<div class="text-3xl md:text-5xl text-center">
-					@helpers.IconFor(icon)
-				</div>
-				<div class="col-span-2 grid grid-cols-1">
-					<div
-						class="text-xl md:text-3xl text-right font-mono md:h-8 overflow-hidden"
-					>
-						{ value } { unit }
-					</div>
-					<div class="text-neutral-600 dark:text-neutral-400 text-sm text-right">
-						{ name }
-					</div>
-				</div>
-			</div>
-		</div>
+	<div class="tuile">
+		<span class="libelle">
+			@helpers.IconFor(icon)
+			{ name }
+		</span>
+		<span class="valeur">
+			{ value }
+			if unit != "" {
+				<span class="unite">{ unit }</span>
+			}
+		</span>
 	</div>
 }
 

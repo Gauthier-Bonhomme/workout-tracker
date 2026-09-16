@@ -548,6 +548,44 @@
     }
   }
 
+  /* --------------------------------------------------------- socle de totaux
+     Les quatre chiffres d'ouverture du tableau de bord. Une seule rangee, sans
+     boite autour de chaque valeur : ce sont les chiffres qui portent, pas les
+     cadres. */
+  .socle-totaux {
+    @apply grid gap-x-10 gap-y-6 mb-8 pb-7 border-b border-line;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    .tuile {
+      @apply flex flex-col gap-1;
+    }
+    .libelle {
+      @apply text-[11px] uppercase tracking-etiquette text-ink-3;
+    }
+    .valeur {
+      @apply font-display text-3xl font-bold tracking-tight leading-none text-ink;
+      font-variant-numeric: tabular-nums;
+    }
+    .unite {
+      @apply ml-1 text-[0.5em] font-semibold text-ink-2;
+    }
+  }
+
+  /* --------------------------------------------------------- carte thermique
+     Le panneau de reglages de Leaflet est construit en JS : il recoit ici le
+     fond et les filets du reste du site plutot qu'un blanc fixe. */
+  .leaflet-control.reglages-heatmap {
+    @apply bg-surface border border-line rounded text-ink text-sm;
+    label {
+      @apply text-ink-2;
+    }
+    input[type="range"] {
+      @apply p-0 accent-accent;
+    }
+    input[type="checkbox"] {
+      @apply accent-accent;
+    }
+  }
+
   /* -------------------------------------------------------- grille de mesures
      Le tableau de vingt lignes de la page d'une seance reste un <table> dans le
      gabarit : on le presente en grille de valeurs, libelle au-dessus, chiffre

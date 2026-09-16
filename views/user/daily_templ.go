@@ -731,7 +731,7 @@ func dailyHeightFtIn(m *database.Measurement) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\" readonly=\"readonly\" required> <input size=\"2\" type=\"number\" name=\"ft\" id=\"ft\" value=\"0\" onchange=\"updateDailyHeight();\"> ft <input size=\"2\" type=\"number\" name=\"in\" id=\"in\" value=\"0\" onchange=\"updateDailyHeight();\"> in<script>\n\t\treadDailyHeight();\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\" readonly=\"readonly\" required> <input size=\"2\" type=\"number\" name=\"ft\" id=\"ft\" value=\"0\" onchange=\"updateDailyHeight();\"> ft <input size=\"2\" type=\"number\" name=\"in\" id=\"in\" value=\"0\" onchange=\"updateDailyHeight();\"> in<script>\r\n\t\treadDailyHeight();\r\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

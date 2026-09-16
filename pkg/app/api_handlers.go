@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"sync"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/jovandeginste/workout-tracker/v2/pkg/database"
@@ -15,6 +17,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/paulmach/orb"
 	geojson "github.com/paulmach/orb/geojson"
 	"github.com/spf13/cast"
 )
@@ -180,7 +183,9 @@ func (a *App) apiCenters(c *echo.Context) error {
 	resp := APIResponse{}
 	coords := geojson.NewFeatureCollection()
 	u := a.getCurrentUser(c)
-	db := a.db.Preload("Data").Preload("Data.Details")
+	// Seul le centre de chaque seance est utilise ici : precharger les points
+	// GPS tirait inutilement toute la trace en memoire.
+	db := a.db.Preload("Data")
 
 	wos, err := u.GetWorkouts(db)
 	if err != nil {
@@ -216,28 +221,121 @@ func (a *App) apiCenters(c *echo.Context) error {
 // @Failure      404  {object}  APIResponse
 // @Failure      500  {object}  APIResponse
 // @Router       /workouts/coordinates [get]
-func (a *App) apiCoordinates(c *echo.Context) error {
-	resp := APIResponse{}
-	coords := geojson.NewFeatureCollection()
+// Points retenus par seance pour la carte thermique. Une carte de chaleur ne
+// gagne rien a recevoir un point par seconde : au-dela, les taches se
+// superposent a l'identique, pour une reponse bien plus lourde.
+const coordinatesParSeance = 150
 
-	db := a.db.Preload("Data").Preload("Data.Details")
-	u := a.getCurrentUser(c)
+// pointLeger ne reprend que les deux champs utiles d'un point de trace. Le
+// decodeur JSON ignore les autres sans les allouer, la ou decoder des MapPoint
+// complets reconstruirait toute la trace en memoire.
+type pointLeger struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
 
-	wos, err := u.GetWorkouts(db)
-	if err != nil {
-		resp.AddError(err)
+// Rassembler les traces demande de relire et de decoder toutes les seances, ce
+// qui prend une trentaine de secondes sur une base bien remplie. Le resultat ne
+// bouge qu'a l'ajout d'une seance : on le garde de cote un moment plutot que de
+// refaire le travail a chaque affichage de la carte.
+const coordinatesValidite = time.Hour
+
+type coordinatesCache struct {
+	mu      sync.Mutex
+	parUser map[uint64]coordinatesEntree
+}
+
+type coordinatesEntree struct {
+	points  *geojson.FeatureCollection
+	calcule time.Time
+}
+
+func (c *coordinatesCache) lire(userID uint64) *geojson.FeatureCollection {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	e, ok := c.parUser[userID]
+	if !ok || time.Since(e.calcule) > coordinatesValidite {
+		return nil
 	}
 
-	for _, w := range wos {
-		if !w.HasTracks() {
+	return e.points
+}
+
+func (c *coordinatesCache) ecrire(userID uint64, points *geojson.FeatureCollection) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.parUser == nil {
+		c.parUser = map[uint64]coordinatesEntree{}
+	}
+
+	c.parUser[userID] = coordinatesEntree{points: points, calcule: time.Now()}
+}
+
+var cacheCoordonnees = &coordinatesCache{}
+
+func (a *App) apiCoordinates(c *echo.Context) error {
+	resp := APIResponse{}
+	u := a.getCurrentUser(c)
+
+	if garde := cacheCoordonnees.lire(u.ID); garde != nil {
+		resp.Results = garde
+		return c.JSON(http.StatusOK, resp)
+	}
+
+	coords := geojson.NewFeatureCollection()
+
+	// Requete brute et parcours ligne a ligne, volontairement hors de l'ORM.
+	// Le cache gorm (pkg/database/gorm_cache.go) est un sync.Map sans plafond
+	// ni eviction qui retient le resultat de chaque requete : en passant par
+	// lui, meme un chargement par lots finit par garder toutes les traces en
+	// memoire, et le serveur se fait tuer avant de repondre.
+	rows, err := a.db.Raw(`
+		SELECT d.points
+		FROM map_data_details d
+		JOIN map_data m ON m.id = d.map_data_id
+		JOIN workouts w ON w.id = m.workout_id
+		WHERE w.user_id = ?`, u.ID).Rows()
+	if err != nil {
+		resp.AddError(err)
+		return c.JSON(http.StatusOK, resp)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var brut []byte
+		if err := rows.Scan(&brut); err != nil {
+			resp.AddError(err)
 			continue
 		}
 
-		for _, p := range w.Data.Details.Points {
-			f := geojson.NewFeature(p.ToOrbPoint())
-
-			coords.Append(f)
+		var points []pointLeger
+		if err := json.Unmarshal(brut, &points); err != nil {
+			resp.AddError(err)
+			continue
 		}
+
+		pas := 1
+		if len(points) > coordinatesParSeance {
+			pas = len(points) / coordinatesParSeance
+		}
+
+		for i := 0; i < len(points); i += pas {
+			if points[i].Lat == 0 && points[i].Lng == 0 {
+				continue
+			}
+
+			coords.Append(geojson.NewFeature(orb.Point{points[i].Lng, points[i].Lat}))
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		resp.AddError(err)
+	}
+
+	if len(resp.Errors) == 0 {
+		cacheCoordonnees.ecrire(u.ID, coords)
 	}
 
 	resp.Results = coords
