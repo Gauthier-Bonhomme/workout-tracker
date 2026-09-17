@@ -125,3 +125,52 @@ func (u *User) GetResumeParType() ([]ResumeType, error) {
 
 	return lignes, nil
 }
+
+// Voisines designe les seances qui encadrent une seance dans le temps.
+type Voisines struct {
+	Precedente *Workout
+	Suivante   *Workout
+}
+
+// GetVoisines renvoie la seance qui precede et celle qui suit, dans l'ordre
+// chronologique.
+//
+// Parcourir un carnet de mille sorties en repassant par la liste entre chaque
+// seance n'a rien d'une lecture ; deux liens suffisent a remonter une saison.
+func (u *User) GetVoisines(w *Workout) (Voisines, error) {
+	var v Voisines
+
+	if w == nil {
+		return v, nil
+	}
+
+	chercher := func(comparaison, ordre string) (*Workout, error) {
+		var trouvee Workout
+
+		err := u.db.
+			Select("id", "name", "date", "type").
+			Where("user_id = ?", u.ID).
+			Where("date "+comparaison+" ?", w.Date).
+			Order("date " + ordre).
+			Limit(1).
+			Take(&trouvee).Error
+		if err != nil {
+			// Aux deux bouts du carnet, il n'y a pas de voisine.
+			return nil, nil //nolint:nilerr
+		}
+
+		return &trouvee, nil
+	}
+
+	var err error
+
+	if v.Precedente, err = chercher("<", "desc"); err != nil {
+		return v, err
+	}
+
+	if v.Suivante, err = chercher(">", "asc"); err != nil {
+		return v, err
+	}
+
+	return v, nil
+}

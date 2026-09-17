@@ -75,7 +75,14 @@ func (a *App) workoutsShowHandler(c *echo.Context) error {
 		return a.redirectWithError(c, a.Reverse("workouts"), err)
 	}
 
-	return Render(c, http.StatusOK, workouts.Show(w))
+	// Les seances qui encadrent celle-ci : de quoi remonter une saison sans
+	// repasser par la liste entre chaque sortie.
+	voisines, err := a.getCurrentUser(c).GetVoisines(w)
+	if err != nil {
+		return a.redirectWithError(c, a.Reverse("workouts"), err)
+	}
+
+	return Render(c, http.StatusOK, workouts.Show(w, voisines))
 }
 
 func (a *App) workoutsAddHandler(c *echo.Context) error {
@@ -143,7 +150,9 @@ func (a *App) workoutShowShared(c *echo.Context) error {
 		return a.redirectWithError(c, a.Reverse("workouts"), err)
 	}
 
-	return Render(c, http.StatusOK, workouts.Show(w))
+	// Une seance partagee se lit seule : personne d'autre que son auteur n'a a
+	// naviguer dans le reste du carnet.
+	return Render(c, http.StatusOK, workouts.Show(w, database.Voisines{}))
 }
 
 func (a *App) workoutsShareHandler(c *echo.Context) error {

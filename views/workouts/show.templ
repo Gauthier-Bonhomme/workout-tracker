@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-templ Show(w *database.Workout) {
+templ Show(w *database.Workout, voisines database.Voisines) {
 	@partials.Page(
 		partials.NewPageOptions().
 			WithSharing(),
@@ -36,6 +36,7 @@ templ Show(w *database.Workout) {
 				}
 			</h2>
 		</div>
+		@NavigationVoisines(voisines)
 		<div class="lg:flex lg:flex-wrap print:block">
 			if w.HasTracks() {
 				<div id="map-container" class="basis-1/2 pagebreak">
@@ -196,4 +197,31 @@ templ renderClimbs(w *database.Workout) {
 			</tbody>
 		</table>
 	</div>
+}
+
+// NavigationVoisines relie une seance a celles qui l'encadrent dans le temps.
+//
+// La plus ancienne a gauche, la plus recente a droite : la fleche suit la
+// chronologie, pas l'ordre d'affichage de la liste.
+templ NavigationVoisines(voisines database.Voisines) {
+	if voisines.Precedente != nil || voisines.Suivante != nil {
+		<nav class="voisines">
+			if voisines.Precedente != nil {
+				<a href={ templ.SafeURL(helpers.RouteFor(ctx, "workout-show", voisines.Precedente.ID)) } rel="prev">
+					<span class="sens">{ "← " + i18n.T(ctx, "translation.Previous") }</span>
+					<span class="intitule">@Name(voisines.Precedente, 32)</span>
+					<span class="quand">{ helpers.LocalDate(ctx, voisines.Precedente.Date) }</span>
+				</a>
+			} else {
+				<span></span>
+			}
+			if voisines.Suivante != nil {
+				<a href={ templ.SafeURL(helpers.RouteFor(ctx, "workout-show", voisines.Suivante.ID)) } rel="next" class="vers-la-droite">
+					<span class="sens">{ i18n.T(ctx, "translation.Next") + " →" }</span>
+					<span class="intitule">@Name(voisines.Suivante, 32)</span>
+					<span class="quand">{ helpers.LocalDate(ctx, voisines.Suivante.Date) }</span>
+				</a>
+			}
+		</nav>
+	}
 }

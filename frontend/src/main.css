@@ -707,6 +707,29 @@
     }
   }
 
+  /* Les seances voisines, en pied de titre : la plus ancienne a gauche, la plus
+     recente a droite. */
+  .voisines {
+    @apply grid gap-4 mb-6 pb-5 border-b border-line text-sm;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    a {
+      @apply flex flex-col gap-0.5 no-underline text-ink-2 hover:text-ink;
+    }
+    a.vers-la-droite {
+      @apply text-right;
+    }
+    .sens {
+      @apply text-[11px] uppercase tracking-etiquette text-ink-3;
+    }
+    .intitule {
+      @apply font-display font-semibold truncate;
+    }
+    .quand {
+      @apply text-xs text-ink-3;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
   /* --------------------------------------------------------- carte thermique
      Le panneau de reglages de Leaflet est construit en JS : il recoit ici le
      fond et les filets du reste du site plutot qu'un blanc fixe. */
