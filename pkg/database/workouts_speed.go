@@ -56,6 +56,11 @@ const (
 	// ressort encore ; au-dessus, une pointe reelle de sprint est rabotee.
 	fenetreLissage = 5 * time.Second
 
+	// En dessous de ce nombre de releves, aucun filtrage : la mediane d'une
+	// poignee de valeurs ne dit plus rien de l'allure du moment. La fenetre, elle,
+	// se resserre d'elle-meme sur les traces courtes.
+	minimumPourFiltrer = 5
+
 	// Acceleration au-dela de laquelle un intervalle est tenu pour impossible,
 	// en m/s2. Un cycliste ou un coureur ne gagnent pas 3 m/s en une seconde ;
 	// un point mal place, si. Ce garde-fou empeche le filtre de raboter une
@@ -93,7 +98,9 @@ func distancesFiltrees(points []MapPoint) []float64 {
 		distances[i] = points[i].Distance
 	}
 
-	if len(points) < 2*hampelDemiFenetre {
+	// En dessous, la mediane locale n'est plus un repere : sur trois releves dont
+	// un saut, le saut peut etre la mediane.
+	if len(points) < minimumPourFiltrer {
 		return distances
 	}
 
@@ -124,10 +131,14 @@ func distancesFiltrees(points []MapPoint) []float64 {
 		aberrant := vitesses[i] > mediane+hampelSeuil*ecart
 		impossible := vitesses[i]-retenue > accelerationMax*secondes
 
-		if aberrant && impossible {
+		switch {
+		case secondes <= 0:
+			// Deux releves au meme horodatage : il n'y a pas d'intervalle, donc
+			// pas de vitesse a retenir ni a comparer.
+		case aberrant && impossible:
 			distances[i] = mediane * secondes
 			retenue = mediane
-		} else {
+		default:
 			retenue = vitesses[i]
 		}
 	}
