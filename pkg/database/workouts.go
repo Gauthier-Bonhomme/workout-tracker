@@ -241,9 +241,20 @@ func (w *Workout) MinElevation() float64 {
 	return w.Data.MinElevation
 }
 
+// MaxSpeed renvoie la vitesse maximale de la seance, en m/s.
+//
+// Quand les points sont charges, elle est recalculee plutot que lue en base :
+// les seances importees avant l'ajout du filtre portent encore une valeur prise
+// sur un saut GPS. Le cout est negligeable a cote de la lecture des points
+// eux-memes, et la page d'une seance affiche alors la meme valeur que sa courbe
+// de vitesse.
 func (w *Workout) MaxSpeed() float64 {
 	if w.Data == nil {
 		return 0
+	}
+
+	if w.Data.Details != nil && len(w.Data.Details.Points) > 1 {
+		return VitesseMaximaleAvecAppareil(w.Data.Details.Points)
 	}
 
 	return w.Data.MaxSpeed
@@ -372,7 +383,7 @@ func NewWorkout(u *User, workoutType WorkoutType, notes string, filename string,
 
 		if g.IsGPXBAsed() {
 			d = gpxDate(g.GPX)
-			data = gpxAsMapData(g.GPX, workoutType)
+			data = gpxAsMapData(g.GPX)
 		}
 
 		if workoutType == WorkoutTypeAutoDetect {
@@ -790,7 +801,7 @@ func (w *Workout) UpdateData(db *gorm.DB) error {
 		return err
 	}
 
-	w.setData(gpxAsMapData(gpxContent, w.Type))
+	w.setData(gpxAsMapData(gpxContent))
 	if err := w.Data.Save(db); err != nil {
 		return err
 	}

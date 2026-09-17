@@ -25,6 +25,7 @@ func (c *cli) workoutsCmd() *cobra.Command {
 	cmd.AddCommand(c.workoutsShowCmd())
 	cmd.AddCommand(c.workoutsExportCmd())
 	cmd.AddCommand(c.workoutsImportCmd())
+	cmd.AddCommand(c.recalculateSpeedsCmd())
 
 	return cmd
 }

@@ -54,12 +54,14 @@ func addDetails(ctx context.Context, data map[string]*dataset, w *database.Worko
 		return
 	}
 
-	for _, p := range d.Points {
-		s := 0.0
+	// La vitesse d'un point a l'autre suit les sauts du GPS et depasse
+	// couramment 300 km/h ; la serie lissee les ecarte (pkg/database/workouts_speed.go).
+	vitesses := database.VitessesLissees(d.Points)
+
+	for i, p := range d.Points {
+		s := vitesses[i]
 		if ems, ok := p.ExtraMetrics["speed"]; ok && ems > 0 {
 			s = ems
-		} else {
-			s = p.AverageSpeed()
 		}
 
 		if p.Lat != 0 || p.Lng != 0 {
