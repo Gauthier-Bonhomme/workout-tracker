@@ -132,3 +132,12 @@ globalThis.showTab = function showTab(parentId, elemId) {
   var newSize = parent.offsetHeight;
   parent.style.minHeight = Math.max(origSize, newSize) + "px";
 };
+
+// Les barres de filtres s'appliquent des qu'on change un critere : un bouton
+// a cliquer apres chaque choix n'apporte rien.
+document.addEventListener("change", function (event) {
+  const form = event.target.closest("form[data-auto-submit]");
+  if (form) {
+    form.submit();
+  }
+});

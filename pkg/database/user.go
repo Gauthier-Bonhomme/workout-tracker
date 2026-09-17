@@ -376,6 +376,18 @@ func (u *User) GetWorkouts(db *gorm.DB) ([]*Workout, error) {
 	return w, nil
 }
 
+// CountWorkouts compte les seances de l'utilisateur retenues par la requete
+// fournie, pagination comprise ou non.
+func (u *User) CountWorkouts(db *gorm.DB) (int64, error) {
+	var total int64
+
+	if err := db.Model(&Workout{}).Where(&Workout{UserID: u.ID}).Count(&total).Error; err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
 func (u *User) AddWorkout(db *gorm.DB, workoutType WorkoutType, notes string, filename string, content []byte) ([]*Workout, []error) {
 	if u == nil {
 		return nil, []error{ErrNoUser}

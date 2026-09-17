@@ -102,6 +102,16 @@ en:
     average_slope: Avg. slope
     category: Cat.
   translation:
+    All_workouts: All workouts
+    All_years: All years
+    By_sport: By sport
+    By_year: By year
+    Next: Next
+    No_workout_found: No workout matches these filters.
+    Page_d_of_d: Page %d of %d
+    Previous: Previous
+    Records: Records
+    d_workouts: '%d workouts'
     Climbs: Climbs
     Create_route_segment_from_climb: Create route segment from this segment
     Latest_measurements: Latest measurements

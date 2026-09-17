@@ -19,7 +19,6 @@
     "chartjs-plugin-trendline": "^3.2.4",
     "chartjs-plugin-zoom": "^2.2.0",
     "date-fns": "^4.1.0",
-    "fullcalendar": "^6.1.11",
     "htmx.org": "^1.9.12",
     "leaflet": "^1.9.4",
     "leaflet.heat": "github:Leaflet/Leaflet.heat",

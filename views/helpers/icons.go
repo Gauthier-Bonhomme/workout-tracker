@@ -102,6 +102,7 @@ var iconMap = map[string]string{
 	"heatmap":           "icon-[fa6-solid--fire]",
 	"changelog":         "icon-[mdi--clipboard-check]",
 	"trend":             "icon-[mdi--trending-up]",
+	"records":           "icon-[fa6-solid--trophy]",
 
 	// Utility Icons
 	"close":         "icon-[fa6-solid--xmark]",

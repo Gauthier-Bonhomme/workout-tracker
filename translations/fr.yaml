@@ -111,6 +111,16 @@ fr:
   settings:
     update: Mettre à jour les paramètres
   translation:
+    All_workouts: Toutes les séances
+    All_years: Toutes les années
+    By_sport: Par sport
+    By_year: Par année
+    Next: Suivante
+    No_workout_found: Aucune séance ne correspond à ces critères.
+    Page_d_of_d: Page %d sur %d
+    Previous: Précédente
+    Records: Records
+    d_workouts: '%d séances'
     API_key_updated: Clé API mise à jour
     Actions: Actions
     Active: Actif

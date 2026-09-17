@@ -46,12 +46,22 @@ func (a *App) workoutsHandler(c *echo.Context) error {
 		return a.redirectWithError(c, a.Reverse("dashboard"), err)
 	}
 
-	w, err := u.GetWorkouts(filters.ToQuery(a.db))
+	total, err := u.CountWorkouts(filters.Where(a.db))
 	if err != nil {
 		return a.redirectWithError(c, a.Reverse("dashboard"), err)
 	}
 
-	return Render(c, http.StatusOK, workouts.List(w, filters))
+	w, err := u.GetWorkouts(filters.Paginate(filters.ToQuery(a.db)))
+	if err != nil {
+		return a.redirectWithError(c, a.Reverse("dashboard"), err)
+	}
+
+	annees, err := u.GetResumeParAnnee()
+	if err != nil {
+		return a.redirectWithError(c, a.Reverse("dashboard"), err)
+	}
+
+	return Render(c, http.StatusOK, workouts.List(w, filters, total, annees))
 }
 
 func (a *App) workoutsShowHandler(c *echo.Context) error {

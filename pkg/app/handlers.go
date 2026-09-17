@@ -107,28 +107,56 @@ func (a *App) dailyHandler(c *echo.Context) error {
 	return Render(c, http.StatusOK, user.Daily(u, count))
 }
 
+// Nombre de seances presentees en pied de tableau de bord. Au-dela, la page
+// double la liste des seances sans rien apprendre de plus.
+const dernieresSeances = 5
+
+// donneesTableauDeBord rassemble les totaux d'un carnet.
+//
+// La page ne chargeait pas seulement ces totaux : elle demandait toutes les
+// seances de l'utilisateur pour les passer a un calendrier qui, lui, allait les
+// chercher par son API. Un millier de lignes lues a chaque affichage, pour
+// rien.
+func (a *App) donneesTableauDeBord(u *database.User) (user.DonneesTableauDeBord, error) {
+	tableau := user.DonneesTableauDeBord{User: u}
+
+	var err error
+
+	if tableau.Resume, err = u.GetResume(); err != nil {
+		return tableau, err
+	}
+
+	if tableau.Annees, err = u.GetResumeParAnnee(); err != nil {
+		return tableau, err
+	}
+
+	if tableau.Types, err = u.GetResumeParType(); err != nil {
+		return tableau, err
+	}
+
+	if tableau.Dernieres, err = u.GetWorkouts(a.db.Limit(dernieresSeances)); err != nil {
+		return tableau, err
+	}
+
+	return tableau, nil
+}
+
 func (a *App) dashboardHandler(c *echo.Context) error {
 	u := a.getCurrentUser(c)
 	if u.IsAnonymous() {
 		return a.redirectWithError(c, a.Reverse("user-signout"), ErrUserNotFound)
 	}
 
-	w, err := u.GetWorkouts(a.db)
+	tableau, err := a.donneesTableauDeBord(u)
 	if err != nil {
-		return a.redirectWithError(c, a.Reverse("user-signout"), ErrUserNotFound)
+		return a.redirectWithError(c, a.Reverse("user-signout"), err)
 	}
 
-	users, err := database.GetUsers(a.db)
-	if err != nil {
-		return a.redirectWithError(c, a.Reverse("user-signout"), ErrUserNotFound)
+	if tableau.Autres, err = database.GetUsers(a.db); err != nil {
+		return a.redirectWithError(c, a.Reverse("user-signout"), err)
 	}
 
-	recent, err := database.GetRecentWorkouts(a.db, 20)
-	if err != nil {
-		return a.redirectWithError(c, a.Reverse("user-signout"), ErrUserNotFound)
-	}
-
-	return Render(c, http.StatusOK, user.Show(u, users, w, recent))
+	return Render(c, http.StatusOK, user.Show(tableau))
 }
 
 func (a *App) userLoginHandler(c *echo.Context) error {

@@ -105,10 +105,10 @@ func (a *App) userShowHandler(c *echo.Context) error {
 		)
 	}
 
-	w, err := u.GetWorkouts(a.db)
+	tableau, err := a.donneesTableauDeBord(u)
 	if err != nil {
 		return a.redirectWithError(c, a.Reverse("user-signout"), err)
 	}
 
-	return Render(c, http.StatusOK, user.Show(u, nil, w, nil))
+	return Render(c, http.StatusOK, user.Show(tableau))
 }

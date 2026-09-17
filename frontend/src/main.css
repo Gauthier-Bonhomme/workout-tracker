@@ -534,10 +534,6 @@
     }
   }
 
-  .workout-card .actions {
-    @apply float-none mt-4 justify-start;
-  }
-
   @media (max-width: 780px) {
     .workout-card {
       grid-template-columns: minmax(0, 1fr);
@@ -567,6 +563,147 @@
     }
     .unite {
       @apply ml-1 text-[0.5em] font-semibold text-ink-2;
+    }
+  }
+
+  /* ------------------------------------------------------- tableau de bord
+     Trois sections separees par du blanc, pas par des cadres : ce que
+     represente le carnet, par ou y entrer, ce qui s'y trouve en dernier. */
+  .titre-carnet {
+    @apply flex flex-wrap items-baseline gap-3 mb-6;
+    .periode {
+      @apply font-sans text-sm font-normal text-ink-3;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .bloc {
+    @apply mt-10;
+    h3 {
+      @apply mb-4 text-[11px] uppercase tracking-etiquette font-semibold text-ink-3;
+    }
+  }
+
+  .entete-bloc {
+    @apply flex flex-wrap items-baseline justify-between gap-3;
+    .lien-suite {
+      @apply text-sm text-accent-ink;
+    }
+  }
+
+  /* La frise des annees : une barre par annee, a l'echelle de la distance
+     parcourue. C'est la seule facon d'atteindre 2014 sans faire defiler mille
+     cartes, et elle dit d'un coup d'oeil ou sont les grosses saisons. */
+  .frise-annees {
+    @apply flex items-end gap-2 list-none m-0 p-0 overflow-x-auto;
+    li {
+      @apply flex-1 min-w-[52px];
+    }
+    a {
+      @apply flex flex-col items-center gap-1.5 no-underline;
+    }
+    .colonne {
+      @apply flex items-end justify-center w-full h-[110px];
+      @apply border-b border-line-fort;
+    }
+    .barre {
+      @apply block w-full max-w-[48px] rounded-t-sm bg-accent/70;
+      transition: background-color 120ms ease;
+    }
+    a:hover .barre,
+    a:focus-visible .barre {
+      @apply bg-accent;
+    }
+    .valeur {
+      @apply text-[11px] text-ink-2;
+      font-variant-numeric: tabular-nums;
+      .unite {
+        @apply ml-0.5 text-ink-3;
+      }
+    }
+    .annee {
+      @apply font-display text-xs font-semibold text-ink-3;
+    }
+    a:hover .annee {
+      @apply text-ink;
+    }
+  }
+
+  /* Les sports : un raccourci par discipline, classe par frequence. */
+  .liste-sports {
+    @apply flex flex-wrap gap-2 list-none m-0 p-0;
+    a {
+      @apply flex items-baseline gap-2 rounded border px-3 py-2 no-underline;
+      @apply bg-surface border-line text-ink;
+      @apply hover:border-line-fort;
+      transition: border-color 120ms ease;
+    }
+    .nom {
+      @apply font-display text-sm font-semibold;
+    }
+    .compte,
+    .distance {
+      @apply text-xs text-ink-3;
+      font-variant-numeric: tabular-nums;
+    }
+    .compte::after {
+      content: "·";
+      @apply ml-2 text-ink-3;
+    }
+  }
+
+  /* ---------------------------------------------------------- liste filtree */
+  .entete-liste {
+    @apply flex flex-wrap items-baseline justify-between gap-3 mb-5;
+    h2 {
+      @apply mb-0;
+    }
+    .compte {
+      @apply ml-2 font-sans text-base font-normal text-ink-3;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  /* Le rail des annees double la frise du tableau de bord : une fois dans la
+     liste, changer d'annee ne doit pas demander de repasser par l'accueil. */
+  .rail-annees {
+    @apply flex flex-wrap gap-1 mb-4 pb-4 border-b border-line;
+    a {
+      @apply rounded px-3 py-1 text-sm no-underline;
+      @apply text-ink-2 hover:text-ink hover:bg-surface-2;
+      font-variant-numeric: tabular-nums;
+    }
+    a.actif {
+      @apply font-display font-semibold;
+      @apply bg-accent-soft text-accent-ink;
+    }
+  }
+
+  .barre-filtres {
+    @apply flex flex-wrap items-center gap-2 my-0 mb-6;
+    label {
+      @apply px-0 text-[11px] uppercase tracking-etiquette text-ink-3;
+    }
+    select {
+      @apply py-1.5 text-sm;
+    }
+  }
+
+  .liste-vide {
+    @apply py-10 text-center text-ink-3;
+  }
+
+  .pagination {
+    @apply flex items-center justify-center gap-6 mt-8 pt-6 border-t border-line text-sm;
+    a {
+      @apply text-accent-ink;
+    }
+    .inactif {
+      @apply text-ink-3;
+    }
+    .position {
+      @apply text-ink-2;
+      font-variant-numeric: tabular-nums;
     }
   }
 

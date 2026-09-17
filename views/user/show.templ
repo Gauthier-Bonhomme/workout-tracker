@@ -8,59 +8,132 @@ import (
 	"github.com/jovandeginste/workout-tracker/v2/views/workouts"
 )
 
-templ Show(user *database.User, users []*database.User, wos []*database.Workout, recentWorkouts []*database.Workout) {
+// Show est la page d'accueil du carnet.
+//
+// Elle repondait a trois questions a la fois -- les records par sport, un
+// calendrier du mois en cours, les vingt dernieres seances -- et n'en traitait
+// aucune : sur un carnet ferme en 2021, le calendrier s'ouvrait vide, et les
+// tableaux de records repetaient six lignes par sport.
+//
+// Ne restent que les trois choses qu'on vient y chercher : ce que represente le
+// carnet, par ou entrer dedans, et ce qui s'y trouve en dernier. Les records
+// sont sur la page des statistiques.
+templ Show(d DonneesTableauDeBord) {
 	@partials.Page(partials.NewPageOptions()) {
-		<h2>
-			@helpers.IconFor("dashboard")
-			{ i18n.T(ctx, "translation.Dashboard_for_s", user.Name) }
+		<h2 class="titre-carnet">
+			{ i18n.T(ctx, "translation.Dashboard_for_s", d.User.Name) }
+			if p := d.Periode(); p != "" {
+				<span class="periode">{ p }</span>
+			}
 		</h2>
-		@StatsRecordsTotal(user)
-		<div class="lg:flex lg:flex-wrap [&>*]:basis-1/2">
-			<div>
-				{{ recs, err := user.GetAllRecords() }}
-				if err != nil {
-					<pre>{ err.Error() }</pre>
-				} else {
-					for _, r := range recs {
-						if r.WorkoutType.IsDistance() && r.Active {
-							<div class="inner-form">
-								@StatsRecordsDistance(r)
-							</div>
-						}
+		@TotauxCarnet(d.Resume)
+		@FriseAnnees(d.Annees)
+		@RepartitionSports(d.Types)
+		@DernieresSeances(d.Dernieres)
+		@AutresCarnets(d.User, d.Autres)
+	}
+}
+
+// TotauxCarnet : les quatre chiffres d'ouverture, tous sports confondus.
+templ TotauxCarnet(r *database.Resume) {
+	if r != nil {
+		<div class="socle-totaux">
+			@StatistiqueTuile("workout", i18n.T(ctx, "menu.Workouts"), helpers.Total(helpers.A2S(r.Seances)), "")
+			@StatistiqueTuile("distance", i18n.T(ctx, "translation.distance"), helpers.Total(helpers.HumanDistance(ctx, r.Distance)), helpers.UserPreferredUnits(ctx).Distance(nil))
+			@StatistiqueTuile("up", i18n.T(ctx, "translation.up"), helpers.Total(helpers.HumanElevation(ctx, r.Up)), helpers.UserPreferredUnits(ctx).Elevation())
+			@StatistiqueTuile("duration", i18n.T(ctx, "translation.duration"), helpers.HumanDuration(r.Duree), "")
+		</div>
+	}
+}
+
+// FriseAnnees : une barre par annee, cliquable. C'est la porte d'entree dans un
+// carnet qui court sur plusieurs annees -- sans elle, remonter a 2014 demandait
+// de faire defiler un millier de cartes.
+templ FriseAnnees(annees []database.ResumeAnnee) {
+	if len(annees) > 1 {
+		{{ maxi := maxDistanceAnnee(annees) }}
+		<section class="bloc">
+			<h3>{ i18n.T(ctx, "translation.By_year") }</h3>
+			<ol class="frise-annees">
+				for _, a := range annees {
+					<li>
+						<a
+							href={ templ.SafeURL(helpers.RouteFor(ctx, "workouts") + "?year=" + a.Annee) }
+							title={ i18n.T(ctx, "translation.d_workouts", a.Seances) + " · " + helpers.Total(helpers.HumanDistance(ctx, a.Distance)) + " " + helpers.UserPreferredUnits(ctx).Distance(nil) }
+						>
+							<span class="colonne">
+								<span class="barre" style={ hauteurBarre(a.Distance, maxi) }></span>
+							</span>
+							<span class="valeur">
+								{ helpers.Total(helpers.HumanDistance(ctx, a.Distance)) }
+								<span class="unite">{ helpers.UserPreferredUnits(ctx).Distance(nil) }</span>
+							</span>
+							<span class="annee">{ a.Annee }</span>
+						</a>
+					</li>
+				}
+			</ol>
+		</section>
+	}
+}
+
+// RepartitionSports : un raccourci par sport, du plus pratique au moins
+// pratique.
+templ RepartitionSports(types []database.ResumeType) {
+	if len(types) > 1 {
+		<section class="bloc">
+			<h3>{ i18n.T(ctx, "translation.By_sport") }</h3>
+			<ul class="liste-sports">
+				for _, t := range types {
+					<li>
+						<a href={ templ.SafeURL(helpers.RouteFor(ctx, "workouts") + "?type=" + t.Type.String()) }>
+							@helpers.IconFor(t.Type.String())
+							<span class="nom">{ i18n.T(ctx, t.Type.StringT()) }</span>
+							<span class="compte">{ helpers.A2S(t.Seances) }</span>
+							if t.Distance > 0 {
+								<span class="distance">
+									{ helpers.Total(helpers.HumanDistance(ctx, t.Distance)) } { helpers.UserPreferredUnits(ctx).Distance(nil) }
+								</span>
+							}
+						</a>
+					</li>
+				}
+			</ul>
+		</section>
+	}
+}
+
+// DernieresSeances reprend la carte de la liste : une sortie se reconnait a la
+// forme de son trace, ici comme la-bas.
+templ DernieresSeances(seances []*database.Workout) {
+	<section class="bloc">
+		<div class="entete-bloc">
+			<h3>{ i18n.T(ctx, "translation.Recent_activity") }</h3>
+			<a class="lien-suite" href={ templ.SafeURL(helpers.RouteFor(ctx, "workouts")) }>
+				{ i18n.T(ctx, "translation.All_workouts") }
+			</a>
+		</div>
+		<div class="workout-feed">
+			for _, w := range seances {
+				@workouts.Card(w)
+			}
+		</div>
+	</section>
+}
+
+templ AutresCarnets(courant *database.User, autres []*database.User) {
+	if len(autres) > 1 {
+		<section class="bloc">
+			<h3>{ i18n.T(ctx, "translation.Other_users") }</h3>
+			<div class="flex flex-wrap gap-2">
+				for _, u := range autres {
+					if u.ID != courant.ID {
+						<a href={ templ.SafeURL(helpers.RouteFor(ctx, "user-show", u.ID)) }>
+							<span class="user-pill">{ u.Name }</span>
+						</a>
 					}
 				}
 			</div>
-			<div>
-				@ProfileCalendar(wos)
-			</div>
-		</div>
-		if len(users) > 1 {
-			<div class="inner-form">
-				<h3>
-					@helpers.IconFor("users")
-					{ i18n.T(ctx, "translation.Other_users") }
-				</h3>
-				<div class="sm:flex sm:flex-wrap gap-5">
-					for _, u := range users {
-						if u.ID != user.ID {
-							<a href={ templ.SafeURL(helpers.RouteFor(ctx, "user-show", u.ID)) }>
-								<span class="user-pill">{ u.Name } </span>
-							</a>
-						}
-					}
-				</div>
-			</div>
-		}
-		<div class="inner-form recent-activity">
-			<h3>
-				@helpers.IconFor("workout")
-				{ i18n.T(ctx, "translation.Recent_activity") }
-			</h3>
-			<div class="sm:flex sm:flex-wrap justify-center">
-				for _, w := range recentWorkouts {
-					@workouts.Item(w)
-				}
-			</div>
-		</div>
+		</section>
 	}
 }

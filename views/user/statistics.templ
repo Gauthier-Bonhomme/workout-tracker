@@ -131,6 +131,32 @@ templ Statistics(u *database.User, since, per string) {
 					</div>
 				</div>
 			</div>
+			@RecordsParSport(currentUser)
+		</div>
+	}
+}
+
+// RecordsParSport reprend les tableaux de records qui occupaient la moitie du
+// tableau de bord. Leur place est ici, aupres des courbes d'evolution.
+templ RecordsParSport(u *database.User) {
+	<h3 class="mt-8">
+		@helpers.IconFor("records")
+		{ i18n.T(ctx, "translation.Records") }
+	</h3>
+	{{ recs, err := u.GetAllRecords() }}
+	if err != nil {
+		<pre>{ err.Error() }</pre>
+	} else {
+		<div class="lg:flex lg:flex-wrap [&>*]:lg:basis-1/2 [&>*]:2xl:basis-1/3">
+			for _, r := range recs {
+				if r.WorkoutType.IsDistance() && r.Active {
+					<div>
+						<div class="inner-form">
+							@StatsRecordsDistance(r)
+						</div>
+					</div>
+				}
+			}
 		</div>
 	}
 }
