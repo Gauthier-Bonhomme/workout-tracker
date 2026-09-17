@@ -76,10 +76,15 @@ func (a *App) workoutsShowHandler(c *echo.Context) error {
 	}
 
 	// Les seances qui encadrent celle-ci : de quoi remonter une saison sans
-	// repasser par la liste entre chaque sortie.
-	voisines, err := a.getCurrentUser(c).GetVoisines(w)
-	if err != nil {
-		return a.redirectWithError(c, a.Reverse("workouts"), err)
+	// repasser par la liste entre chaque sortie. Elles sont cherchees dans le
+	// carnet de l'utilisateur connecte, elles n'ont donc de sens que sur ses
+	// propres seances.
+	voisines := database.Voisines{}
+
+	if u := a.getCurrentUser(c); w.User != nil && w.User.ID == u.ID {
+		if voisines, err = u.GetVoisines(w); err != nil {
+			return a.redirectWithError(c, a.Reverse("workouts"), err)
+		}
 	}
 
 	return Render(c, http.StatusOK, workouts.Show(w, voisines))
